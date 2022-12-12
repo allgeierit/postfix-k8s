@@ -1,0 +1,74 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: border-postfix-headless
+  labels:
+    app.kubernetes.io/instance: border-postfix-headless
+    app.kubernetes.io/name: border-postfix
+spec:
+  ports:
+  - port: 25
+    name: mailoffice
+  clusterIP: None
+  selector:
+    app.kubernetes.io/instance: border-postfix
+    app.kubernetes.io/name: border-postfix
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: border-postfix
+  labels:
+    app.kubernetes.io/instance: border-postfix
+    app.kubernetes.io/name: border-postfix
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: border-postfix
+  serviceName: "border"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: border-postfix
+        app.kubernetes.io/name: border-postfix
+        app: border-postfix
+    spec:
+      imagePullSecrets:
+      - name: docker-allgeier
+
+      containers:
+      - name: postfix
+        image: docker.allgeier-it.de:5000/border-postfix:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 25
+        - containerPort: 26
+        command: ["/scripts/start.sh"]
+        volumeMounts:
+        - name: data-storage
+          mountPath: /data
+
+        - name: config
+          mountPath: "/config"
+          readOnly: true
+
+      volumes:
+      - name: config
+        configMap:
+          name: postfix-cfg
+
+  ##
+  # Claim template
+  ##
+  volumeClaimTemplates:
+  - metadata:
+      name: data-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: ebs-sc
+      resources:
+        requests:
+          storage: 8Gi
+

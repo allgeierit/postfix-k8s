@@ -1,0 +1,57 @@
+# See /usr/share/postfix/main.cf.dist for a commented, more complete version
+
+
+# Debian specific:  Specifying a file name will cause the first
+# line of that file to be used as the name.  The Debian default
+# is /etc/mailname.
+#myorigin = /etc/mailname
+
+smtpd_banner = Border Mailer
+biff = no
+
+# appending .domain is the MUA's job.
+append_dot_mydomain = no
+
+# Uncomment the next line to generate "delayed mail" warnings
+#delay_warning_time = 4h
+
+readme_directory = no
+
+# See http://www.postfix.org/COMPATIBILITY_README.html -- default to 2 on
+# fresh installs.
+compatibility_level = 2
+
+
+
+# TLS parameters
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_tls_security_level=may
+
+smtp_tls_CApath=/etc/ssl/certs
+smtp_tls_security_level=may
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+
+smtpd_relay_restrictions = reject_non_fqdn_recipient check_client_access hash:/etc/postfix/access reject_unauth_destination
+myhostname = localhost
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+mydestination = $myhostname, /etc/mailname, localhost, localhost.localdomain, localhost
+relayhost = 
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = all
+inet_protocols = all
+maillog_file_prefixes = /data,/var
+maillog_file = /data/log/postfix.log
+data_directory = /data/lib/postfix
+mail_spool_directory = /data/mail
+queue_directory = /data/spool/postfix
+transport_maps = hash:/etc/postfix/transport
+smtpd_client_restrictions = check_client_access hash:/etc/postfix/access, reject
+smtpd_relay_restrictions_o365_mailoffice = reject_non_fqdn_recipient check_sender_access hash:/etc/postfix/o365_domains reject_unauth_destination
+smtpd_relay_restrictions_o365_gateway = reject_non_fqdn_recipient check_recipient_access hash:/etc/postfix/o365_domains reject_unauth_destination
+header_checks = regexp:/etc/postfix/header_checks
+

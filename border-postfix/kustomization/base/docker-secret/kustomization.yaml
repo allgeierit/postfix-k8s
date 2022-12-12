@@ -1,0 +1,6 @@
+bases:
+  # Enable this in flux deployment, when secrets are cluser
+  # or namespace wire. Our own secret must be saved using
+  # sealed secrets.
+  - ../../../../../infrastructure/common/secrets
+

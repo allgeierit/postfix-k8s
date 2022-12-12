@@ -1,0 +1,50 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: border-postfix-smtp
+    app.kubernetes.io/name: border-postfix
+  name: border-postfix-smtp
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: mailinm.julia-cluster.link
+    service.beta.kubernetes.io/aws-load-balancer-name: mailin-mailoffice
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+spec:
+  ports:
+  - port: 25
+
+  selector:
+    app.kubernetes.io/instance: border-postfix
+    app.kubernetes.io/name: border-postfix
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: border-postfix-26
+    app.kubernetes.io/name: border-postfix
+  name: border-postfix-26
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: mailing.julia-cluster.link
+    service.beta.kubernetes.io/aws-load-balancer-name: mailin-gateway
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+
+spec:
+  ports:
+  - port: 25
+    targetPort: 26
+
+  selector:
+    app.kubernetes.io/instance: border-postfix
+    app.kubernetes.io/name: border-postfix
+  type: LoadBalancer

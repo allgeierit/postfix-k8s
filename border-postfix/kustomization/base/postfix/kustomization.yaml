@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+
+ConfigMapGenerator:
+  - name: postfix-cfg
+    files:
+      - access
+      - transport
+      - header_checks
+      - main.cf
+      - master.cf
+      - o365_domains
+

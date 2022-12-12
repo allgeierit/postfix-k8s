@@ -1,0 +1,95 @@
+VERSION 0.6
+
+FROM ubuntu:20.04
+ARG patchlevel=latest
+ARG image_name=docker.allgeier-it.de:5000/border-postfix
+
+system:
+        RUN apt-get update && apt-get upgrade -y && \
+            apt-get -y install \
+            sudo \
+            postfix net-tools inetutils-ping \
+            vim
+
+postfix:
+        FROM +system
+
+        ###########################################################################
+        # Postfix
+        ###########################################################################
+
+        # For later mount persistent volume.
+        RUN mkdir -p /data/lib/postfix
+        RUN mkdir -p /data/mail
+        RUN mkdir -p /data/spool/postfix
+        RUN mkdir -p /data/log
+
+        RUN mkdir -p /scripts
+        COPY bin/bootstrap.sh /scripts
+        COPY bin/start.sh /scripts
+
+        # TODO: Maybe use a good name later.
+        RUN echo "localhost" > /etc/mailname
+
+        # Remove path to man pages.
+        RUN sed -i -e 's/^\$man//g' /etc/postfix/postfix-files
+
+        # No chroot
+        #RUN sed -i -e 's/ y / n /g' /etc/postfix/master.cf
+
+        COPY etc/master.cf /etc/postfix/master.cf
+
+        RUN postconf "smtpd_banner=Border Mailer"
+
+        # Logging.
+        RUN postconf "maillog_file_prefixes=/data,/var"
+        RUN postconf "maillog_file=/data/log/postfix.log"
+
+        # Set directories to later mount.
+        RUN postconf "data_directory=/data/lib/postfix"
+        RUN postconf "mail_spool_directory=/data/mail"
+        RUN postconf "queue_directory=/data/spool/postfix"
+
+        # Transport.
+        RUN postconf "transport_maps=hash:/etc/postfix/transport"
+        RUN echo "*   error:mail not deliverable" > /etc/postfix/transport
+        RUN postmap /etc/postfix/transport
+
+        # Enable header checks.
+        RUN postconf "header_checks=pcre:/etc/postfix/header_checks"
+        RUN touch header_checks
+
+        # Allow only defined clients to send email via postfix.
+        RUN postconf "smtpd_client_restrictions=check_client_access hash:/etc/postfix/access, reject"
+        RUN postconf "smtpd_relay_restrictions=reject_non_fqdn_recipient check_client_access hash:/etc/postfix/access reject_unauth_destination"
+        RUN touch /etc/postfix/access
+        RUN postmap /etc/postfix/access
+
+        # Relay restrictions for sender domains. Only allow mail from defined domains.
+        RUN postconf "smtpd_relay_restrictions_o365_mailoffice=reject_non_fqdn_recipient check_sender_access hash:/etc/postfix/o365_domains reject_unauth_destination"
+
+        # Relay restrictions for recipient domains. Only allow mail to defined domains.
+        RUN postconf "smtpd_relay_restrictions_o365_gateway=reject_non_fqdn_recipient check_recipient_access hash:/etc/postfix/o365_domains reject_unauth_destination"
+
+        # Header checks.
+        RUN touch /etc/postfix/header_checks
+        RUN postmap /etc/postfix/header_checks
+
+        # O365 and external domains.
+        RUN touch /etc/postfix/o365_domains
+        RUN postmap /etc/postfix/o365_domains
+
+        RUN cp -pr /var/spool/postfix /data/spool
+        RUN postfix set-permissions
+
+        CMD ["postfix", "start-fg"]
+
+        # Postfix
+        EXPOSE 25 # MailOffice
+        EXPOSE 26 # Gateway
+
+release:
+        FROM +postfix
+        ARG patchlevel
+        ARG image_name
+        SAVE IMAGE --push $image_name:$patchlevel

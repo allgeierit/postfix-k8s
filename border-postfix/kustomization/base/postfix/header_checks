@@ -1,0 +1,3 @@
+# Filter by Tendant-Id
+/^X-Julia-Tendant-Id-MailOffice: Test1234/ FILTER smtp:julia-mailoffice.julia.svc.cluster.local
+/^X-Julia-Tendant-Id-Gateway: Test1234/ FILTER smtp:julia-gateway.julia.svc.cluster.local:26
